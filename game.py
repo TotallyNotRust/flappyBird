@@ -94,8 +94,8 @@ while going:
     pipesOBJ = []
     for ind, i in enumerate(pipes):
         pipes[ind] -= speed
-        pipesOBJ += [pg.draw.rect(screen, (0, 255, 0), [pipes[ind],0,20,screen_height])]
-        pHoleOBJ += [pg.draw.rect(screen, (0, 0, 0), [pipes[ind],pHole[ind],20,holeSize])]
+        pipesOBJ += [[pg.draw.rect(screen, (0, 255, 0), [i,0,20,pHole[ind]]), pg.draw.rect(screen, (0, 255, 0), [i, pHole[ind]+holeSize, 20, screen_height])]]
+        #pHoleOBJ += [pg.draw.rect(screen, (0, 0, 0), [pipes[ind],pHole[ind],20,holeSize])]
 
     ## MOVE PLAYER
     startX = screen_width - currentX - 10
@@ -104,9 +104,8 @@ while going:
     screen.blit(playerSprite.image, playerSprite.rect)
 
     ## HIT DETECTION
-    for i in list(zip(pipesOBJ, pHoleOBJ)):
-        
-        if playerSprite.rect.colliderect(i[0]) and not playerSprite.rect.colliderect(i[1]):
+    for x in pipesOBJ:
+        if playerSprite.rect.colliderect(x[0]) or playerSprite.rect.colliderect(x[1]):
             print("Player hit pipe")
             dead()
             going = False
