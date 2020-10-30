@@ -8,6 +8,7 @@ pg.display.init()
 
 screen_width=700
 screen_height=400
+
 screen=pg.display.set_mode([screen_width, screen_height])
 
 pg.key.set_repeat(500, 30)
@@ -22,10 +23,13 @@ velY = 0
 Max = 20 
 holeSize = 150
 speed = 2
+thiccnessMultiplier = 2
+pipeWideness = 20
+distanceBetweenPipes = 200
 
 pg.display.update()
 
-genHole = lambda: random.randint(10, screen_height-(holeSize-10))
+genHole = lambda: random.randint(10, screen_height-(holeSize+10))
 
 pipes = [screen_width]
 pHole = [genHole()]
@@ -45,13 +49,11 @@ def dead():
                 quit()
         pg.display.update()
 
-started = False
-
 class Player(pg.sprite.Sprite):
     def __init__(self, pos_x, pos_y, picture="player.png"):
         super().__init__()
         self.image = pg.image.load(picture)
-        self.image = pg.transform.smoothscale(self.image, (20,30))
+        self.image = pg.transform.smoothscale(self.image, (20*thiccnessMultiplier,30))
 
         self.rect = self.image.get_rect()
         self.rect.center = (pos_x, pos_y)
@@ -72,6 +74,9 @@ while going:
                 if velY > Max:
                     velY = Max
                 break
+            if event.key == pg.KMOD_SHIFT:
+                if velY > 0:
+                    velY -= (Max-velY)*0.5
     ## DO MATH :)
     if grav:
         currentY += velY
@@ -83,7 +88,7 @@ while going:
     screen.fill((0,0,0))
 
     ## GENERATE AND MOVE PIPE(S)
-    if pipes[-1] < screen_width-150:
+    if pipes[-1] < screen_width-distanceBetweenPipes:
         pipes += [screen_width]
         pHole += [genHole()]
 
@@ -94,7 +99,7 @@ while going:
     pipesOBJ = []
     for ind, i in enumerate(pipes):
         pipes[ind] -= speed
-        pipesOBJ += [[pg.draw.rect(screen, (0, 255, 0), [i,0,20,pHole[ind]]), pg.draw.rect(screen, (0, 255, 0), [i, pHole[ind]+holeSize, 20, screen_height])]]
+        pipesOBJ += [[pg.draw.rect(screen, (0, 255, 0), [i,0,pipeWideness,pHole[ind]]), pg.draw.rect(screen, (0, 255, 0), [i, pHole[ind]+holeSize, pipeWideness, screen_height])]]
         #pHoleOBJ += [pg.draw.rect(screen, (0, 0, 0), [pipes[ind],pHole[ind],20,holeSize])]
 
     ## MOVE PLAYER
