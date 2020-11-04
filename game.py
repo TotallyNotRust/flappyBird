@@ -13,7 +13,7 @@ screen=pg.display.set_mode([screen_width, screen_height])
 
 pg.key.set_repeat(500, 30)
 
-fps = 60
+fps = 75
 
 currentY = screen_height/2
 currentX = screen_width/2
@@ -33,6 +33,26 @@ genHole = lambda: random.randint(10, screen_height-(holeSize+10))
 
 pipes = [screen_width]
 pHole = [genHole()]
+
+class Scoreboard:
+    def __init__(self):
+        self.score = 0
+        pg.font.init()
+    
+    def __add__(self, amount: int):
+        '''
+        adds amount to current score and returns the result
+        WARNING: DO NOT USE += IT WILL NOT WORk
+        '''
+        self.score += amount
+        return self.score + amount
+
+    def update(self):
+        font = pg.font.Font('freesansbold.ttf', 32)
+        text = font.render(f'{self.score}', True, (116, 114, 158))
+        rect = text.get_rect()
+        rect.center = (screen_width-10, screen_height-26)
+        screen.blit(text, rect)
 
 def dead():
     pg.font.init()
@@ -64,8 +84,11 @@ playerSprite = Player(screen_width//2, screen_height//2)
 playerGroup = pg.sprite.Group()
 playerGroup.add(playerSprite)
 
+sc = Scoreboard()
+
 going = True
 while going:
+    sc.update()
     ## GET PLAYER INPUT AND APPLY VELOCITY
     for event in pg.event.get():
         if event.type == pg.KEYDOWN:
@@ -109,7 +132,10 @@ while going:
     screen.blit(playerSprite.image, playerSprite.rect)
 
     ## HIT DETECTION
-    for x in pipesOBJ:
+    for x in pipesOBJ: # Loops throug pipes
+        if currentX == x[0].left: # Checks if the left most point of the pipe has the same x value as the player
+            sc + 1 # Adds one point to the score
+
         if playerSprite.rect.colliderect(x[0]) or playerSprite.rect.colliderect(x[1]):
             print("Player hit pipe")
             dead()
@@ -118,4 +144,5 @@ while going:
 
     ## wait till next frame
     time.sleep(1/fps)
+    sc.update()
     pg.display.update()
