@@ -86,6 +86,23 @@ playerGroup.add(playerSprite)
 
 sc = Scoreboard()
 
+def makePipes(i, ind):
+    yield pg.draw.rect(screen, (0, 255, 0), [i,0,pipeWideness,pHole[ind]])
+    yield pg.draw.rect(screen, (0, 255, 0), [i, pHole[ind]+holeSize, pipeWideness, screen_height])
+    #[x,y,X,Y]
+    yield pg.draw.rect(screen, (0, 255, 0), [i-(pipeWideness*0.5),
+                                            pHole[ind]-1,
+                                            (pipeWideness)*2,
+                                            20
+                                            ])
+    yield pg.draw.rect(screen, (0, 255, 0), [i-(pipeWideness*0.5), 
+                                            pHole[ind]+holeSize, 
+                                            (pipeWideness)*2, 
+                                            20
+                                            ])
+
+
+
 going = True
 while going:
     sc.update()
@@ -115,14 +132,14 @@ while going:
         pipes += [screen_width]
         pHole += [genHole()]
 
-    if pipes[0] < 20:
+    if pipes[0] < -40:
         pipes.pop(0)
         pHole.pop(0)
     pHoleOBJ = []
     pipesOBJ = []
     for ind, i in enumerate(pipes):
         pipes[ind] -= speed
-        pipesOBJ += [[pg.draw.rect(screen, (0, 255, 0), [i,0,pipeWideness,pHole[ind]]), pg.draw.rect(screen, (0, 255, 0), [i, pHole[ind]+holeSize, pipeWideness, screen_height])]]
+        pipesOBJ += [list(makePipes(i, ind))]
         #pHoleOBJ += [pg.draw.rect(screen, (0, 0, 0), [pipes[ind],pHole[ind],20,holeSize])]
 
     ## MOVE PLAYER
@@ -136,7 +153,7 @@ while going:
         if currentX == x[0].left: # Checks if the left most point of the pipe has the same x value as the player
             sc + 1 # Adds one point to the score
 
-        if playerSprite.rect.colliderect(x[0]) or playerSprite.rect.colliderect(x[1]):
+        if any([playerSprite.rect.colliderect(x[ind]) for ind, _ in enumerate(x)]):
             print("Player hit pipe")
             dead()
             going = False
