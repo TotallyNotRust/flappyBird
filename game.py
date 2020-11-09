@@ -82,28 +82,40 @@ genHole = lambda: random.randint(10, screen_height-(holeSize+10))
 # playerGroup.add(playerSprite)
 
 class Pipe:
+    def __init__(self, rect):
+        self.rect = pg.draw.rect(screen, (0,255,0), rect)
+        self.surface = pg.Surface((self.rect.width, self.rect.height))
+        self.surface.fill((0,255,0))
+    def update(self, x):
+        self.rect.x = self.rect.x + x
+        pg.display.update(self.rect)
+
+class Pipes:
     def __init__(self, x=screen_width):
         self.pHole = genHole()
         self.pipes = []
-        self.pipes += [pg.draw.rect(screen, (0, 255, 0), [x, 0, pipeWideness, self.pHole])]
+        self.pipes += [Pipe([x, 0, pipeWideness, self.pHole])]
 
-        self.pipes += [pg.draw.rect(screen, (0, 255, 0), [x, self.pHole+holeSize, pipeWideness, screen_height])]
+        self.pipes += [Pipe([x, self.pHole+holeSize, pipeWideness, screen_height])]
 
-        self.pipes += [pg.draw.rect(screen, (0, 255, 0), [x-(int(pipeWideness*0.5)), self.pHole-1, (pipeWideness)*2, 20 ])]
+        self.pipes += [Pipe([x-(int(pipeWideness*0.5)), self.pHole-1, (pipeWideness)*2, 20 ])]
 
-        self.pipes += [pg.draw.rect(screen, (0, 255, 0), [x-(int(pipeWideness*0.5)), self.pHole+holeSize, (pipeWideness)*2, 20])]
+        self.pipes += [Pipe([x-(int(pipeWideness*0.5)), self.pHole+holeSize, (pipeWideness)*2, 20])]
 
-    def move(self, x):
-        print(end="")
-        for i in self.pipes:
-            i.center = (i.x+x, i.y)
-            print(f"move pipe to {i.center}")
+    def move(self, x=1):
+        '''
+        pass how many pixel you want to move the pipe along the x axis
+        '''
+        for _,i in enumerate(self.pipes):
+            i.update(x)
+            if _ == 3:
+                print(i.rect.center)
+                pass
 
 
-last = (0,0)
-pipe = Pipe()
-
+pipe = Pipes()
 while True:
-    pipe.move(10)
+    pg.event.get()
+    pipe.move(1)
     time.sleep(1/fps)
     pg.display.update()
