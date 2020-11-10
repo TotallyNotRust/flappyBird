@@ -1,6 +1,6 @@
 import pygame as pg
-from pygame import draw, font, sprite
-import time, random, os
+from pygame import draw, font, sprite, time
+import random, os
 
 pg.init()
 
@@ -84,14 +84,13 @@ genHole = lambda: random.randint(10, screen_height-(holeSize+10))
 class Pipe:
     def __init__(self, rect):
         self.rect = pg.draw.rect(screen, (0,255,0), rect)
-        self.surface = pg.Surface((self.rect.width, self.rect.height))
-        self.surface.fill((0,255,0))
     def update(self, x):
-        self.rect.x = self.rect.x + x
-        pg.display.update(self.rect)
+        self.rect.x = self.rect.x - x
+        pg.draw.rect(screen, (0, 255, 0), self.rect)
+
 
 class Pipes:
-    def __init__(self, x=screen_width):
+    def __init__(self, x=screen_width-40):
         self.pHole = genHole()
         self.pipes = []
         self.pipes += [Pipe([x, 0, pipeWideness, self.pHole])]
@@ -108,14 +107,13 @@ class Pipes:
         '''
         for _,i in enumerate(self.pipes):
             i.update(x)
-            if _ == 3:
-                print(i.rect.center)
-                pass
 
+clock = pg.time.Clock()
 
 pipe = Pipes()
 while True:
+    screen.fill((0,0,0))
     pg.event.get()
     pipe.move(1)
-    time.sleep(1/fps)
+    clock.tick(60)
     pg.display.update()
