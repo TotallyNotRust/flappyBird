@@ -1,6 +1,6 @@
 import pygame as pg
 from pygame import draw, font, sprite, time
-import random, os
+import random, os, threading, time
 
 pg.init()
 
@@ -51,35 +51,60 @@ genHole = lambda: random.randint(10, screen_height-(holeSize+10))
 #         rect.center = (screen_width-10, screen_height-26)
 #         screen.blit(text, rect)
 
-# def dead():
-#     pg.font.init()
-#     font = pg.font.Font('freesansbold.ttf', 32)
-#     text = font.render('Game over', True, (116, 114, 158))
-#     rect = text.get_rect()
-#     rect.center = (screen_width//2, screen_height//2)
-#     screen.fill((0,0,0))
-#     screen.blit(text, rect)
-#     while True:
-#         for event in pg.event.get():
-#             if event == pg.QUIT:
-#                 pg.quit()
-#                 quit()
-#         pg.display.update()
+def dead():
+    pg.font.init()
+    font = pg.font.Font('freesansbold.ttf', 32)
+    text = font.render('Game over', True, (116, 114, 158))
+    rect = text.get_rect()
+    rect.center = (screen_width//2, screen_height//2)
+    screen.fill((0,0,0))
+    screen.blit(text, rect)
+    while True:
+        for event in pg.event.get():
+            if event == pg.QUIT:
+                pg.quit()
+                quit()
+        pg.display.update()
 
-# class Player(pg.sprite.Sprite):
-#     def __init__(self, pos_x, pos_y, picture="player.png"):
-#         super().__init__()
-#         self.image = pg.image.load(picture)
-#         self.image = pg.transform.smoothscale(self.image, (20*thiccnessMultiplier,30))
+class Player(pg.sprite.Sprite):
+    def __init__(self, pos_x, pos_y, picture="player.png"):
+        super().__init__()
+        self.Y = 0
+        self.velY = 0
+        self.image = pg.image.load(picture)
+        self.image = pg.transform.smoothscale(self.image, (20*thiccnessMultiplier,30))
 
-#         self.rect = self.image.get_rect()
-#         self.rect.center = (pos_x, pos_y)
-#     def move(self, pos_x, pos_y):
-#         self.rect.center = (pos_x, pos_y)
+        self.rect = self.image.get_rect()
+        self.rect.center = (pos_x, pos_y)
 
-# playerSprite = Player(screen_width//2, screen_height//2)
-# playerGroup = pg.sprite.Group()
-# playerGroup.add(playerSprite)
+        screen.blit(self.image, self.rect)
+    def gravity(self):
+        '''
+        run this every frame to aply gravity
+        '''
+        self.rect.y -= self.velY
+        if self.rect.bottom > screen_height:
+            self.rect.bottom = screen_height
+        elif self.rect.top < 0:
+            self.rect.top = 0
+            self.velY = 0
+        if self.velY > -10 and self.rect.y > 0:
+            self.velY -= 0.5
+        if self.rect.bottom < 0:
+            self.velY = 0
+        #print(self.velY)
+        # print(currentY)
+        screen.blit(self.image, self.rect)
+    def fly(self):
+        self.velY += (Max-self.velY)*0.5
+        print(self.velY)
+        if self.velY > Max:
+            self.velY = Max
+    screen.fill((0,0,0))
+
+playerSprite = Player(screen_width//2, screen_height//2)
+playerGroup = pg.sprite.Group()
+playerGroup.add(playerSprite)
 
 class Pipe:
     def __init__(self, rect):
@@ -110,10 +135,18 @@ class Pipes:
 
 clock = pg.time.Clock()
 
+player = Player(currentX, currentY)
+
+pg.display.update()
+
 pipe = Pipes()
 while True:
     screen.fill((0,0,0))
-    pg.event.get()
+    for event in pg.event.get():
+        if event.type == pg.KEYDOWN:
+            if event.key == pg.K_SPACE:
+                player.fly()
+    player.gravity()
     pipe.move(1)
-    clock.tick(60)
+    time.sleep(1/fps)
     pg.display.update()
