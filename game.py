@@ -87,7 +87,7 @@ class Player(pg.sprite.Sprite):
             self.rect.bottom = screen_height
         elif self.rect.top < 0:
             self.rect.top = 0
-            self.velY = 0
+            self.velY = -1
         if self.velY > -10 and self.rect.y > 0:
             self.velY -= 0.5
         if self.rect.bottom < 0:
@@ -117,6 +117,7 @@ class Pipe:
 class Pipes:
     def __init__(self, x=screen_width-40):
         self.pHole = genHole()
+        self.x = x
         self.pipes = []
         self.pipes += [Pipe([x, 0, pipeWideness, self.pHole])]
 
@@ -132,6 +133,30 @@ class Pipes:
         '''
         for _,i in enumerate(self.pipes):
             i.update(x)
+    def isAtEdge(self):
+        return self.pipes[-1].y == 0
+    def reset(self):
+        self.pHole = genHole()
+        self.pipes = []
+        self.pipes += [Pipe([self.x, 0, pipeWideness, self.pHole])]
+
+        self.pipes += [Pipe([self.x, self.pHole+holeSize, pipeWideness, screen_height])]
+
+        self.pipes += [Pipe([self.x-(int(pipeWideness*0.5)), self.pHole-1, (pipeWideness)*2, 20 ])]
+
+        self.pipes += [Pipe([self.x-(int(pipeWideness*0.5)), self.pHole+holeSize, (pipeWideness)*2, 20])]
+
+class PipeHandler:
+    def __init__(self):
+        self.pipes = []
+    def __add__(self, pipe):
+        self.pipes += [pipe]
+        return self.pipes
+    def update(self):
+        for i in self.pipes:
+            if i.pipes.isAtEdge():
+                self.pipes += [i.reset()]
+            i.move()
 
 clock = pg.time.Clock()
 
@@ -140,6 +165,11 @@ player = Player(currentX, currentY)
 pg.display.update()
 
 pipe = Pipes()
+
+handler = PipeHandler()
+handler + pipe
+
+pass
 while True:
     screen.fill((0,0,0))
     for event in pg.event.get():
