@@ -1,12 +1,12 @@
 import pygame as pg
 from pygame import draw, font, sprite, time
-import random, os, threading, time
+import random, os, threading, time, math
 
 pg.init()
 
 pg.display.init()
 
-screen_width=700
+screen_width=800
 screen_height=400
 
 screen=pg.display.set_mode([screen_width, screen_height])
@@ -127,14 +127,20 @@ class Pipes:
 
         self.pipes += [Pipe([x-(int(pipeWideness*0.5)), self.pHole+holeSize, (pipeWideness)*2, 20])]
 
-    def move(self, x=1):
+    def move(self, x=1, detect=playerSprite):
         '''
         pass how many pixel you want to move the pipe along the x axis
         '''
-        for _,i in enumerate(self.pipes):
+        for i in self.pipes:
             i.update(x)
+            if i.rect.colliderect(detect):
+                dead()
+                global playing
+                playing = False
     def isAtEdge(self):
-        return self.pipes[-1].y == 0
+        return self.pipes[-1].rect.x <= 0
+    def __left__(self):
+        return self.pipes[-1].rect.x
     def reset(self):
         self.pHole = genHole()
         self.pipes = []
@@ -147,16 +153,23 @@ class Pipes:
         self.pipes += [Pipe([self.x-(int(pipeWideness*0.5)), self.pHole+holeSize, (pipeWideness)*2, 20])]
 
 class PipeHandler:
-    def __init__(self):
-        self.pipes = []
-    def __add__(self, pipe):
-        self.pipes += [pipe]
-        return self.pipes
+    def __init__(self, amount=math.ceil(screen_width/distanceBetweenPipes)):
+        self.pipes = [Pipes()]
+        self.amount = amount + 1
     def update(self):
         for i in self.pipes:
-            if i.pipes.isAtEdge():
-                self.pipes += [i.reset()]
-            i.move()
+            if i:
+                if i.isAtEdge():
+                    print("Attempting to reset pipe")
+                    self.pipes += [i.reset()]
+                yield(i.move(1))
+        try:
+            if len(self.pipes) > 0:
+                if self.pipes[-1].__left__() < screen_width-distanceBetweenPipes and len(self.pipes) < self.amount:
+                    print(f"making new pipe {self.pipes[-1].__left__()}")
+                    self.pipes += [Pipes()]
+        except:
+            pass
 
 clock = pg.time.Clock()
 
@@ -164,19 +177,17 @@ player = Player(currentX, currentY)
 
 pg.display.update()
 
-pipe = Pipes()
-
 handler = PipeHandler()
-handler + pipe
 
-pass
-while True:
+playing = True
+while playing:
     screen.fill((0,0,0))
     for event in pg.event.get():
         if event.type == pg.KEYDOWN:
             if event.key == pg.K_SPACE:
                 player.fly()
     player.gravity()
-    pipe.move(1)
+    if any(handler.update()):
+        break
     time.sleep(1/fps)
     pg.display.update()
