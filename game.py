@@ -31,25 +31,25 @@ pg.display.update()
 
 genHole = lambda: random.randint(10, screen_height-(holeSize+10))
 
-# class Scoreboard:
-#     def __init__(self):
-#         self.score = 0
-#         pg.font.init()
+class Scoreboard:
+    def __init__(self):
+        self.score = 0
+        pg.font.init()
     
-#     def __add__(self, amount: int):
-#         '''
-#         adds amount to current score and returns the result
-#         WARNING: DO NOT USE += IT WILL NOT WORk
-#         '''
-#         self.score += amount
-#         return self.score + amount
+    def __add__(self, amount: int):
+        '''
+        adds amount to current score and returns the result
+        WARNING: DO NOT USE += IT WILL NOT WORk
+        '''
+        self.score += amount
+        return self.score + amount
 
-#     def update(self):
-#         font = pg.font.Font('freesansbold.ttf', 32)
-#         text = font.render(f'{self.score}', True, (116, 114, 158))
-#         rect = text.get_rect()
-#         rect.center = (screen_width-10, screen_height-26)
-#         screen.blit(text, rect)
+    def update(self):
+        font = pg.font.Font('freesansbold.ttf', 32)
+        text = font.render(f'{self.score}', True, (116, 114, 158))
+        rect = text.get_rect()
+        rect.center = (10, screen_height-26)
+        screen.blit(text, rect)
 
 def dead():
     pg.font.init()
@@ -95,6 +95,7 @@ class Player(pg.sprite.Sprite):
         #print(self.velY)
         # print(currentY)
         screen.blit(self.image, self.rect)
+        return self.rect
     def fly(self):
         self.velY += (Max-self.velY)*0.5
         print(self.velY)
@@ -127,16 +128,16 @@ class Pipes:
 
         self.pipes += [Pipe([x-(int(pipeWideness*0.5)), self.pHole+holeSize, (pipeWideness)*2, 20])]
 
-    def move(self, x=1, detect=playerSprite):
+    def move(self, x, rect):
+        global playerSprite
         '''
         pass how many pixel you want to move the pipe along the x axis
         '''
-        for i in self.pipes:
-            i.update(x)
-            if i.rect.colliderect(detect):
-                dead()
-                global playing
-                playing = False
+        for _, p in enumerate(self.pipes):
+            p.update(x)
+            dist = distanceBetweenPipes//4
+            if rect.colliderect(p.rect):
+                yield True
     def isAtEdge(self):
         return self.pipes[-1].rect.x <= 0
     def __left__(self):
@@ -156,13 +157,13 @@ class PipeHandler:
     def __init__(self, amount=math.ceil(screen_width/distanceBetweenPipes)):
         self.pipes = [Pipes()]
         self.amount = amount + 1
-    def update(self):
+    def update(self, rect):
         for i in self.pipes:
             if i:
                 if i.isAtEdge():
                     print("Attempting to reset pipe")
                     self.pipes += [i.reset()]
-                yield(i.move(1))
+                yield i.move(1, rect)
         try:
             if len(self.pipes) > 0:
                 if self.pipes[-1].__left__() < screen_width-distanceBetweenPipes and len(self.pipes) < self.amount:
@@ -179,15 +180,18 @@ pg.display.update()
 
 handler = PipeHandler()
 
-playing = True
-while playing:
+
+while True:
     screen.fill((0,0,0))
     for event in pg.event.get():
         if event.type == pg.KEYDOWN:
             if event.key == pg.K_SPACE:
                 player.fly()
-    player.gravity()
-    if any(handler.update()):
+    pos = player.gravity()
+    checkList = list(handler.update(pos))
+    if any([any(i) for i in checkList]):
+        dead()
         break
     time.sleep(1/fps)
+    print(pos.top)
     pg.display.update()
