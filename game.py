@@ -18,13 +18,15 @@ fps = 75
 currentY = screen_height/2
 currentX = screen_width/2
 
+debug = False # Set this to True to disable hit detection
+
 grav = True
 velY = 0
 Max = 20 
 holeSize = 150
 speed = 2
 thiccnessMultiplier = 2
-pipeWideness = 20
+pipeWideness = 40
 distanceBetweenPipes = 200
 
 pg.display.update()
@@ -65,6 +67,7 @@ def dead():
                 pg.quit()
                 quit()
         pg.display.update()
+        time.sleep(1/fps)
 
 class Player(pg.sprite.Sprite):
     def __init__(self, pos_x, pos_y, picture="player.png"):
@@ -107,12 +110,21 @@ playerSprite = Player(screen_width//2, screen_height//2)
 playerGroup = pg.sprite.Group()
 playerGroup.add(playerSprite)
 
-class Pipe:
-    def __init__(self, rect):
-        self.rect = pg.draw.rect(screen, (0,255,0), rect)
+class Pipe(pg.sprite.Sprite):
+    def __init__(self, rect, isTop = False, flipped=False):
+        self.isTop = isTop
+        self.rect = pg.Rect(rect)
+        if not self.isTop:
+            self.image = pg.transform.smoothscale(pg.image.load("Pipe Bottom.png"), (self.rect.width, self.rect.height))
+            self.width = self.rect.width
+        else:
+            self.image = pg.transform.smoothscale(pg.image.load("Pipe Top.png"), (self.rect.width, self.rect.height))
+            if flipped:
+                self.image = pg.transform.flip(self.image, False, True)
+            self.width = self.rect.width
     def update(self, x):
         self.rect.x = self.rect.x - x
-        pg.draw.rect(screen, (0, 255, 0), self.rect)
+        screen.blit(self.image, self.rect)
 
 
 class Pipes:
@@ -124,9 +136,9 @@ class Pipes:
 
         self.pipes += [Pipe([x, self.pHole+holeSize, pipeWideness, screen_height])]
 
-        self.pipes += [Pipe([x-(int(pipeWideness*0.5)), self.pHole-1, (pipeWideness)*2, 20 ])]
+        self.pipes += [Pipe([x, self.pHole-1, pipeWideness, 20], isTop=True, flipped=True)]
 
-        self.pipes += [Pipe([x-(int(pipeWideness*0.5)), self.pHole+holeSize, (pipeWideness)*2, 20])]
+        self.pipes += [Pipe([x, self.pHole+holeSize, pipeWideness, 20],isTop=True)]
 
     def move(self, x, rect):
         global playerSprite
@@ -136,8 +148,9 @@ class Pipes:
         for _, p in enumerate(self.pipes):
             p.update(x)
             dist = distanceBetweenPipes//4
-            if rect.colliderect(p.rect):
-                yield True
+            if not debug:
+                if rect.colliderect(p.rect):
+                    yield True
     def isAtEdge(self):
         return self.pipes[-1].rect.x <= 0
     def __left__(self):
@@ -149,9 +162,9 @@ class Pipes:
 
         self.pipes += [Pipe([self.x, self.pHole+holeSize, pipeWideness, screen_height])]
 
-        self.pipes += [Pipe([self.x-(int(pipeWideness*0.5)), self.pHole-1, (pipeWideness)*2, 20 ])]
+        self.pipes += [Pipe([self.x, self.pHole-1, pipeWideness, 20], isTop=True, flipped=True)]
 
-        self.pipes += [Pipe([self.x-(int(pipeWideness*0.5)), self.pHole+holeSize, (pipeWideness)*2, 20])]
+        self.pipes += [Pipe([self.x, self.pHole+holeSize, pipeWideness, 20],isTop=True)]
 
 class PipeHandler:
     def __init__(self, amount=math.ceil(screen_width/distanceBetweenPipes)):
@@ -180,9 +193,11 @@ pg.display.update()
 
 handler = PipeHandler()
 
+backgroundRect = pg.Rect((0, 0, screen_width, screen_height))
+backgroundImage = pg.transform.smoothscale(pg.image.load("Background.jpg"), (screen_width, screen_height))
 
 while True:
-    screen.fill((0,0,0))
+    screen.blit(backgroundImage, backgroundRect)
     for event in pg.event.get():
         if event.type == pg.KEYDOWN:
             if event.key == pg.K_SPACE:
