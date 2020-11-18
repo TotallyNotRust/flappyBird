@@ -1,6 +1,7 @@
 import pygame as pg
-from pygame import draw, font, sprite, time
-import random, os, threading, time, math
+import random
+import time
+import math
 
 pg.init()
 
@@ -18,7 +19,7 @@ fps = 75
 currentY = screen_height/2
 currentX = screen_width/2
 
-debug = False # Set this to True to disable hit detection
+debug = True # Set this to True to disable hit detection
 
 grav = True
 velY = 0
@@ -27,6 +28,7 @@ holeSize = 150
 speed = 2
 thiccnessMultiplier = 2
 pipeWideness = 40
+pipeHeight = 40
 distanceBetweenPipes = 200
 
 pg.display.update()
@@ -43,20 +45,20 @@ class Scoreboard:
         adds amount to current score and returns the result
         WARNING: DO NOT USE += IT WILL NOT WORk
         '''
-        self.score += amount
+        self.score += amount 
         return self.score + amount
 
     def update(self):
-        font = pg.font.Font('freesansbold.ttf', 32)
-        text = font.render(f'{self.score}', True, (116, 114, 158))
+        Font = pg.font.Font('freesansbold.ttf', 32)
+        text = Font.render(f'{self.score}', True, (116, 114, 158))
         rect = text.get_rect()
         rect.center = (10, screen_height-26)
         screen.blit(text, rect)
 
 def dead():
     pg.font.init()
-    font = pg.font.Font('freesansbold.ttf', 32)
-    text = font.render('Game over', True, (116, 114, 158))
+    Font = pg.font.Font('freesansbold.ttf', 32)
+    text = Font.render('Game over', True, (116, 114, 158))
     rect = text.get_rect()
     rect.center = (screen_width//2, screen_height//2)
     screen.fill((0,0,0))
@@ -162,28 +164,70 @@ class Pipes:
 
         self.pipes += [Pipe([self.x, self.pHole+holeSize, pipeWideness, screen_height])]
 
-        self.pipes += [Pipe([self.x, self.pHole-1, pipeWideness, 20], isTop=True, flipped=True)]
+        self.pipes += [Pipe([self.x, self.pHole-1, pipeWideness, pipeHeight], isTop=True, flipped=True)]
 
-        self.pipes += [Pipe([self.x, self.pHole+holeSize, pipeWideness, 20],isTop=True)]
+        self.pipes += [Pipe([self.x, self.pHole+holeSize, pipeWideness, pipeHeight],isTop=True)]
 
 class PipeHandler:
     def __init__(self, amount=math.ceil(screen_width/distanceBetweenPipes)):
         self.pipes = [Pipes()]
         self.amount = amount + 1
+        self.waiting = []
     def update(self, rect):
         for i in self.pipes:
             if i:
-                if i.isAtEdge():
+                if i.isAtEdge() and not i in self.waiting:
                     print("Attempting to reset pipe")
-                    self.pipes += [i.reset()]
-                yield i.move(1, rect)
+                    self.waiting += [i]
+                else:
+                    yield i.move(1, rect)
         try:
             if len(self.pipes) > 0:
-                if self.pipes[-1].__left__() < screen_width-distanceBetweenPipes and len(self.pipes) < self.amount:
-                    print(f"making new pipe {self.pipes[-1].__left__()}")
-                    self.pipes += [Pipes()]
+                if self.pipes[-1].__left__() < screen_width-distanceBetweenPipes: 
+                    if len(self.pipes) < self.amount:
+                        print(f"making new pipe {self.pipes[-1].__left__()}")
+                        self.pipes += [Pipes()]
+                    elif len(self.waiting) > 0:
+                        try:
+                            self.pipes.remove(self.waiting[0])
+                            self.waiting[0].reset()
+                            self.pipes += self.waiting[0]
+                            self.waiting.pip(0)
+                        except Exception as e:
+                            print(e)
         except:
             pass
+
+class Background:
+    def __init__(self, image, x, end):
+        self.image = image
+        self.end = end
+        self.x = x
+        self.y = 0
+        self.rect = pg.Rect((self.x, self.y, screen_width, screen_height))
+        self.default = self.x
+    
+    def update(self, x = 1, y = 0):
+        self.x += x
+        self.y += y
+        if self.x >= self.end:
+            self.x = self.default 
+        self.rect = pg.Rect((self.x, self.y, screen_width, screen_height))
+
+    def __reset__(self):
+        self.image = self.default
+
+
+class BackgroundHandler:
+    def __init__(self, background="Background.jpg"):
+        self.background = pg.transform.smoothscale(pg.image.load(background), (screen_width, screen_height))
+        self.activeImage = Background(self.background, 0, screen_width)
+        self.nonActive = Background(self.background, screen_width*-1, 0)
+    def update(self):
+        self.activeImage.update()
+        self.nonActive.update()
+        screen.blit(self.activeImage.image, self.activeImage.rect)
+        screen.blit(self.nonActive.image, self.nonActive.rect)
 
 clock = pg.time.Clock()
 
@@ -193,11 +237,14 @@ pg.display.update()
 
 handler = PipeHandler()
 
-backgroundRect = pg.Rect((0, 0, screen_width, screen_height))
-backgroundImage = pg.transform.smoothscale(pg.image.load("Background.jpg"), (screen_width, screen_height))
+# backgroundRect = pg.Rect((0, 0, screen_width, screen_height))
+# backgroundImage = pg.transform.smoothscale(pg.image.load("Background.jpg"), (screen_width, screen_height))
+
+background = BackgroundHandler()
 
 while True:
-    screen.blit(backgroundImage, backgroundRect)
+    #screen.blit(backgroundImage, backgroundRect)
+    background.update()
     for event in pg.event.get():
         if event.type == pg.KEYDOWN:
             if event.key == pg.K_SPACE:
@@ -208,5 +255,4 @@ while True:
         dead()
         break
     time.sleep(1/fps)
-    print(pos.top)
     pg.display.update()
