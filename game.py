@@ -14,7 +14,7 @@ screen=pg.display.set_mode([screen_width, screen_height])
 
 pg.key.set_repeat(500, 30)
 
-fps = 75
+fps = 60
 
 currentY = screen_height/2
 currentX = screen_width/2
@@ -157,28 +157,21 @@ class Pipes:
         return self.pipes[-1].rect.x <= 0
     def __left__(self):
         return self.pipes[-1].rect.x
-    def reset(self):
-        self.pHole = genHole()
-        self.pipes = []
-        self.pipes += [Pipe([self.x, 0, pipeWideness, self.pHole])]
-
-        self.pipes += [Pipe([self.x, self.pHole+holeSize, pipeWideness, screen_height])]
-
-        self.pipes += [Pipe([self.x, self.pHole-1, pipeWideness, pipeHeight], isTop=True, flipped=True)]
-
-        self.pipes += [Pipe([self.x, self.pHole+holeSize, pipeWideness, pipeHeight],isTop=True)]
 
 class PipeHandler:
     def __init__(self, amount=math.ceil(screen_width/distanceBetweenPipes)):
         self.pipes = [Pipes()]
         self.amount = amount + 1
-        self.waiting = []
     def update(self, rect):
         for i in self.pipes:
             if i:
-                if i.isAtEdge() and not i in self.waiting:
+                if i.isAtEdge() and self.pipes[-1].__left__() < screen_width-distanceBetweenPipes:
                     print("Attempting to reset pipe")
-                    self.waiting += [i]
+                    print(screen_width-distanceBetweenPipes)
+                    print(self.pipes[-1].__left__())
+                    self.pipes.remove(i)
+                    self.pipes += [Pipes()]
+
                 else:
                     yield i.move(1, rect)
         try:
@@ -187,45 +180,44 @@ class PipeHandler:
                     if len(self.pipes) < self.amount:
                         print(f"making new pipe {self.pipes[-1].__left__()}")
                         self.pipes += [Pipes()]
-                    elif len(self.waiting) > 0:
-                        try:
-                            self.pipes.remove(self.waiting[0])
-                            self.waiting[0].reset()
-                            self.pipes += self.waiting[0]
-                            self.waiting.pip(0)
-                        except Exception as e:
-                            print(e)
         except:
             pass
 
 class Background:
-    def __init__(self, image, x, end):
-        self.image = image
-        self.end = end
-        self.x = x
-        self.y = 0
-        self.rect = pg.Rect((self.x, self.y, screen_width, screen_height))
-        self.default = self.x
+    def __init__(self, image, x):
+        try:
+            self.image = image
+            self.end = x-screen_width
+            self.x = x
+            self.y = 0
+            self.rect = pg.Rect((self.x, self.y, screen_width, screen_height))
+            self.default = self.x
+        except Exception as e:
+            print(e, 1)
     
-    def update(self, x = 1, y = 0):
-        self.x += x
-        self.y += y
-        if self.x >= self.end:
-            self.x = self.default 
-        self.rect = pg.Rect((self.x, self.y, screen_width, screen_height))
+    def update(self, x = 0.5, y = 0):
+        try:
+            self.x -= x
+            self.y -= y
+            if self.x <= self.end:
+                self.__reset__()
+            self.rect = pg.Rect((self.x, self.y, screen_width, screen_height))
+        except Exception as e:
+            print(e, 2)
 
     def __reset__(self):
-        self.image = self.default
+        self.x = self.default
 
 
 class BackgroundHandler:
-    def __init__(self, background="Background.jpg"):
+    def __init__(self, background="Background.png"):
         self.background = pg.transform.smoothscale(pg.image.load(background), (screen_width, screen_height))
-        self.activeImage = Background(self.background, 0, screen_width)
-        self.nonActive = Background(self.background, screen_width*-1, 0)
+        self.activeImage = Background(self.background, 0)
+        self.nonActive = Background(self.background, screen_width)
     def update(self):
         self.activeImage.update()
         self.nonActive.update()
+
         screen.blit(self.activeImage.image, self.activeImage.rect)
         screen.blit(self.nonActive.image, self.nonActive.rect)
 
