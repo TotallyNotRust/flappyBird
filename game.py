@@ -15,6 +15,8 @@ screen=pg.display.set_mode([screen_width, screen_height])
 pg.key.set_repeat(500, 30)
 
 fps = 60
+delay = 1/60
+multiplier = fps/60
 
 currentY = screen_height/2
 currentX = screen_width/2
@@ -94,7 +96,7 @@ class Player(pg.sprite.Sprite):
             self.rect.top = 0
             self.velY = -1
         if self.velY > -10 and self.rect.y > 0:
-            self.velY -= 0.5
+            self.velY -= 0.5 * multiplier
         if self.rect.bottom < 0:
             self.velY = 0
         #print(self.velY)
@@ -125,7 +127,7 @@ class Pipe(pg.sprite.Sprite):
                 self.image = pg.transform.flip(self.image, False, True)
             self.width = self.rect.width
     def update(self, x):
-        self.rect.x = self.rect.x - x
+        self.rect.x = self.rect.x*multiplier - x
         screen.blit(self.image, self.rect)
 
 
@@ -227,6 +229,8 @@ player = Player(currentX, currentY)
 
 pg.display.update()
 
+clock = pg.time.Clock()
+
 handler = PipeHandler()
 
 # backgroundRect = pg.Rect((0, 0, screen_width, screen_height))
@@ -246,5 +250,5 @@ while True:
     if any([any(i) for i in checkList]):
         dead()
         break
-    time.sleep(1/fps)
+    clock.tick(60)
     pg.display.update()
