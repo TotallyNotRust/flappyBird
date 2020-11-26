@@ -21,7 +21,7 @@ multiplier = fps/60
 currentY = screen_height/2
 currentX = screen_width/2
 
-debug = True # Set this to True to disable hit detection
+debug = False # Set this to True to disable hit detection
 
 grav = True
 velY = 0
@@ -47,14 +47,15 @@ class Scoreboard:
         adds amount to current score and returns the result
         WARNING: DO NOT USE += IT WILL NOT WORk
         '''
-        self.score += amount 
+        print(amount)
+        self.score += amount
         return self.score + amount
 
     def update(self):
         Font = pg.font.Font('freesansbold.ttf', 32)
-        text = Font.render(f'{self.score}', True, (116, 114, 158))
+        text = Font.render(f'{self.score//4}', True, (116, 114, 158))
         rect = text.get_rect()
-        rect.center = (10, screen_height-26)
+        rect.x, rect.bottom = (10, screen_height-10)
         screen.blit(text, rect)
 
 def dead():
@@ -65,13 +66,23 @@ def dead():
     rect.center = (screen_width//2, screen_height//2)
     screen.fill((0,0,0))
     screen.blit(text, rect)
-    while True:
-        for event in pg.event.get():
-            if event == pg.QUIT:
-                pg.quit()
-                quit()
+    Done = False
+    while not Done:
+        lst = pg.event.get()
+        if lst:
+            print(2)
+        for event in lst:
+            if event.type == pg.KEYDOWN:
+                global handler
+                global sb
+                global background
+                handler = PipeHandler()
+                sb = Scoreboard()    
+                background = BackgroundHandler()
+                Done = not Done
+                run()
         pg.display.update()
-        time.sleep(1/fps)
+        clock.tick(30)
 
 class Player(pg.sprite.Sprite):
     def __init__(self, pos_x, pos_y, picture="player.png"):
@@ -85,24 +96,27 @@ class Player(pg.sprite.Sprite):
         self.rect.center = (pos_x, pos_y)
 
         screen.blit(self.image, self.rect)
-    def gravity(self):
+    def gravity(self, grav = True):
         '''
         run this every frame to aply gravity
         '''
-        self.rect.y -= self.velY
-        if self.rect.bottom > screen_height:
-            self.rect.bottom = screen_height
-        elif self.rect.top < 0:
-            self.rect.top = 0
-            self.velY = -1
-        if self.velY > -10 and self.rect.y > 0:
-            self.velY -= 0.5 * multiplier
-        if self.rect.bottom < 0:
-            self.velY = 0
-        #print(self.velY)
-        # print(currentY)
+        if grav:
+            self.rect.y -= self.velY
+            if self.rect.bottom > screen_height:
+                self.rect.bottom = screen_height
+            elif self.rect.top < 0:
+                self.rect.top = 0
+                self.velY = -1
+            if self.velY > -10 and self.rect.y > 0:
+                self.velY -= 0.5 * multiplier
+            if self.rect.bottom < 0:
+                self.velY = 0
+            #print(self.velY)
+            # print(currentY)
+            screen.blit(self.image, self.rect)
+            return self.rect
         screen.blit(self.image, self.rect)
-        return self.rect
+
     def fly(self):
         self.velY += (Max-self.velY)*0.5
         print(self.velY)
@@ -146,6 +160,7 @@ class Pipes:
 
     def move(self, x, rect):
         global playerSprite
+        global sb
         '''
         pass how many pixel you want to move the pipe along the x axis
         '''
@@ -155,6 +170,9 @@ class Pipes:
             if not debug:
                 if rect.colliderect(p.rect):
                     yield True
+                if p.rect.x == playerSprite.rect.x:
+                    sb + 1
+                    print("PLAYER PASSED PIPE")
     def isAtEdge(self):
         return self.pipes[-1].rect.x <= 0
     def __left__(self):
@@ -173,7 +191,6 @@ class PipeHandler:
                     print(self.pipes[-1].__left__())
                     self.pipes.remove(i)
                     self.pipes += [Pipes()]
-
                 else:
                     yield i.move(1, rect)
         try:
@@ -233,22 +250,47 @@ clock = pg.time.Clock()
 
 handler = PipeHandler()
 
+sb = Scoreboard()
+
 # backgroundRect = pg.Rect((0, 0, screen_width, screen_height))
 # backgroundImage = pg.transform.smoothscale(pg.image.load("Background.jpg"), (screen_width, screen_height))
 
 background = BackgroundHandler()
 
-while True:
-    #screen.blit(backgroundImage, backgroundRect)
-    background.update()
-    for event in pg.event.get():
-        if event.type == pg.KEYDOWN:
-            if event.key == pg.K_SPACE:
-                player.fly()
-    pos = player.gravity()
-    checkList = list(handler.update(pos))
-    if any([any(i) for i in checkList]):
-        dead()
-        break
-    clock.tick(60)
-    pg.display.update()
+Font = pg.font.Font('freesansbold.ttf', 32)
+Ftext = Font.render('Press space to start', True, (116, 114, 158))
+Frect = Ftext.get_rect()
+Frect.center = (screen_width//2, screen_height//2+100)
+
+def run():
+    done = True
+
+    while done:
+        background.update()
+        screen.blit(Ftext, Frect)
+        for event in pg.event.get():
+            if event.type == pg.KEYDOWN:
+                if event.key == pg.K_SPACE:
+                    player.fly()
+                    done = not done
+        player.gravity(False)
+        pg.display.update()
+        clock.tick(60)
+
+    while True:
+        #screen.blit(backgroundImage, backgroundRect)
+        background.update()
+        for event in pg.event.get():
+            if event.type == pg.KEYDOWN:
+                if event.key == pg.K_SPACE:
+                    player.fly()
+        pos = player.gravity()
+        checkList = list(handler.update(pos))
+        if any([any(i) for i in checkList]):
+            dead()
+            break
+        sb.update()
+        clock.tick(60)
+        pg.display.update()
+
+run()
