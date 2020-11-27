@@ -59,28 +59,53 @@ class Scoreboard:
         screen.blit(text, rect)
 
 def dead():
+    global sb
+    screen.fill((0,0,0))
     pg.font.init()
     Font = pg.font.Font('freesansbold.ttf', 32)
     text = Font.render('Game over', True, (116, 114, 158))
     rect = text.get_rect()
     rect.center = (screen_width//2, screen_height//2)
-    screen.fill((0,0,0))
     screen.blit(text, rect)
+
+    Font2 = pg.font.Font('freesansbold.ttf', 16)
+    text2 = Font2.render(f'Score: {sb.score//4}', True, (116, 114, 158))
+    rect2 = text2.get_rect()
+    rect2.center = (screen_width//2, screen_height//2+40)
+    screen.blit(text2, rect2)
+    info = sorted([i for i in open("Scores.txt", "r").read().split("\n")[:-1] if i!="\n"], key=lambda x: int(x))
+    print(info)
+    if not info or sb.score > int(info[-1]):
+        with open("Scores.txt", "a") as f:
+            f.write(f'{sb.score//4}\n')
+            f.close()
+    Font3 = pg.font.Font('freesansbold.ttf', 16)
+    info = sorted([i for i in open("Scores.txt", "r").read().split("\n")[:-1] if i!="\n"], key=lambda x: int(x))
+    print(info)
+    text3 = Font3.render(f'Highscore: {info[-1]}', True, (116, 114, 158))
+    rect3 = text3.get_rect()
+    rect3.center = (screen_width//2, screen_height//2+60)
+    screen.blit(text3, rect3)
+
+    Font4 = pg.font.Font('freesansbold.ttf', 16)
+    text4 = Font4.render('Press any button to continue (not space)', True, (116, 114, 158))
+    rect4 = text4.get_rect()
+    rect4.center = (screen_width//2, screen_height//2+100)
+    screen.blit(text4, rect4)
+
     Done = False
     while not Done:
         lst = pg.event.get()
-        if lst:
-            print(2)
         for event in lst:
             if event.type == pg.KEYDOWN:
-                global handler
-                global sb
-                global background
-                handler = PipeHandler()
-                sb = Scoreboard()    
-                background = BackgroundHandler()
-                Done = not Done
-                run()
+                if event.key != pg.K_SPACE:
+                    global handler
+                    global background
+                    handler = PipeHandler()
+                    sb = Scoreboard()    
+                    background = BackgroundHandler()
+                    Done = not Done
+                    run()
         pg.display.update()
         clock.tick(30)
 
