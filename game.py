@@ -23,6 +23,8 @@ currentX = screen_width/2
 
 debug = False # Set this to True to disable hit detection
 
+difficulty = 1
+
 grav = True
 velY = 0
 Max = 20 
@@ -60,6 +62,7 @@ class Scoreboard:
 
 def dead():
     global sb
+    global player
     screen.fill((0,0,0))
     pg.font.init()
     Font = pg.font.Font('freesansbold.ttf', 32)
@@ -105,6 +108,7 @@ def dead():
                     sb = Scoreboard()    
                     background = BackgroundHandler()
                     Done = not Done
+                    player.reset()
                     run()
         pg.display.update()
         clock.tick(30)
@@ -121,6 +125,11 @@ class Player(pg.sprite.Sprite):
         self.rect.center = (pos_x, pos_y)
 
         screen.blit(self.image, self.rect)
+
+    def reset(self):
+        self.Y = 0
+        self.velY = 0
+    
     def gravity(self, grav = True):
         '''
         run this every frame to aply gravity
@@ -172,7 +181,7 @@ class Pipe(pg.sprite.Sprite):
 
 class Pipes:
     def __init__(self, x=screen_width-40):
-        self.pHole = genHole()
+        self.pHole = genHole()-10*difficulty
         self.x = x
         self.pipes = []
         self.pipes += [Pipe([x, 0, pipeWideness, self.pHole])]
@@ -195,7 +204,7 @@ class Pipes:
             if not debug:
                 if rect.colliderect(p.rect):
                     yield True
-                if p.rect.x == playerSprite.rect.x:
+                if playerSprite.rect.x + difficulty-1 >= p.rect.x >= playerSprite.rect.x:
                     sb + 1
                     print("PLAYER PASSED PIPE")
     def isAtEdge(self):
@@ -217,7 +226,7 @@ class PipeHandler:
                     self.pipes.remove(i)
                     self.pipes += [Pipes()]
                 else:
-                    yield i.move(1, rect)
+                    yield i.move(1*difficulty, rect)
         try:
             if len(self.pipes) > 0:
                 if self.pipes[-1].__left__() < screen_width-distanceBetweenPipes: 
@@ -240,8 +249,9 @@ class Background:
             print(e, 1)
     
     def update(self, x = 0.5, y = 0):
+        global difficulty
         try:
-            self.x -= x
+            self.x -= x*difficulty
             self.y -= y
             if self.x <= self.end:
                 self.__reset__()
@@ -282,22 +292,34 @@ sb = Scoreboard()
 
 background = BackgroundHandler()
 
-Font = pg.font.Font('freesansbold.ttf', 32)
-Ftext = Font.render('Press space to start', True, (116, 114, 158))
-Frect = Ftext.get_rect()
-Frect.center = (screen_width//2, screen_height//2+100)
+
 
 def run():
+    global difficulty
     done = True
+
+    Font = pg.font.Font('freesansbold.ttf', 32)
+    Ftext = Font.render('Press space to start', True, (116, 114, 158))
+    Frect = Ftext.get_rect()
+    Frect.center = (screen_width//2, screen_height//2+100)
+
+    dfont = pg.font.Font('freesansbold.ttf', 23)
+    dtext = dfont.render('Press 1,2,3 to select difficulty', True, (116, 114, 158))
+    drect = dtext.get_rect()
+    drect.center = (screen_width//2, 30)
 
     while done:
         background.update()
         screen.blit(Ftext, Frect)
+        screen.blit(dtext, drect)
         for event in pg.event.get():
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_SPACE:
                     player.fly()
                     done = not done
+                elif event.key in [pg.K_1, pg.K_2, pg.K_3]:
+                    difficulty = event.key-48
+                    print(difficulty)
         player.gravity(False)
         pg.display.update()
         clock.tick(60)
